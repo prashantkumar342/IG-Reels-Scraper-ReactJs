@@ -73,8 +73,9 @@ function HomePage() {
       const response = await axios.get(
         `${VITE_BACKEND_URL}/scrape?username=${username}&limit=${limit}`
       );
-      if (response?.statusText === "OK" && response?.status === 200) {
+      if (response?.status === 200) {
         setReelsData(response?.data?.reels || []);
+        
         toast.success("Reels fetched successfully");
       }
     } catch (error) {
