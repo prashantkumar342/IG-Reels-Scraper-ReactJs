@@ -41,9 +41,7 @@ function HomePage() {
   const [reelsData, setReelsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(6);
-  const [totalReels, setTotalReels] = useState(0);
+  const [limit, setLimit] = useState(6);
   const [showModal, setShowModal] = useState(false);
   const [currentReelIndex, setCurrentReelIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
@@ -72,13 +70,11 @@ function HomePage() {
     try {
       setLoading(true);
       setHasSearched(true);
-      const skip = (page - 1) * limit;
       const response = await axios.get(
-        `${VITE_BACKEND_URL}/scrape?username=${username}&limit=${limit}&skip=${skip}`
+        `${VITE_BACKEND_URL}/scrape?username=${username}&limit=${limit}`
       );
       if (response?.statusText === "OK" && response?.status === 200) {
         setReelsData(response?.data?.reels || []);
-        setTotalReels(response?.data?.reels?.length || 0);
         toast.success("Reels fetched successfully");
       }
     } catch (error) {
@@ -87,11 +83,6 @@ function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-    handleSubmit();
   };
 
   const openModal = (index) => {
@@ -227,6 +218,16 @@ function HomePage() {
                 />
                 <Instagram className="absolute right-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
               </div>
+              <div className="relative">
+                <Input
+                  type="number"
+                  placeholder="Number of reels (1-50)"
+                  value={limit}
+                  onChange={(e) => setLimit(Math.max(1, Math.min(50, parseInt(e.target.value) || 6)))}
+                  className="pl-6 pr-16 h-14 border-2 border-purple-200 focus:border-purple-400 rounded-xl dark:border-purple-700 dark:focus:border-purple-500 transition-colors text-lg"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                />
+              </div>
             </CardContent>
             <CardFooter className="pt-4 pb-8 px-8">
               <Button
@@ -266,15 +267,15 @@ function HomePage() {
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Reels Explorer
+                  Reels Scraper
                 </h1>
               </div>
             </div>
 
             {/* Compact Search Section */}
             <div className="flex-1 max-w-md">
-              <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95">
-                <CardContent className="p-3">
+              {/* <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95"> */}
+               
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Input
@@ -285,6 +286,16 @@ function HomePage() {
                         onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
                       />
                       <Instagram className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        placeholder="Limit"
+                        value={limit}
+                        onChange={(e) => setLimit(Math.max(1, Math.min(50, parseInt(e.target.value) || 6)))}
+                        className="pl-3 pr-8 h-9 border-2 border-purple-200 focus:border-purple-400 rounded-lg dark:border-purple-700 dark:focus:border-purple-500 transition-colors text-sm w-24"
+                        onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                      />
                     </div>
                     <Button
                       onClick={handleSubmit}
@@ -298,8 +309,8 @@ function HomePage() {
                       )}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+               
+              {/* </Card> */}
             </div>
           </div>
         </div>
@@ -322,7 +333,7 @@ function HomePage() {
                 </Avatar>
                 <div>
                   <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">@{username}</h2>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{totalReels} reels found</p>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{reelsData.length} reels found</p>
                 </div>
               </div>
               <Separator className="bg-gradient-to-r from-purple-200 to-pink-200" />
@@ -331,93 +342,58 @@ function HomePage() {
 
           {/* Instagram-style Smaller Reels Grid */}
           {!loading && reelsData.length > 0 && (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-1 sm:gap-2 lg:gap-3 mb-6 sm:mb-8">
-                {reelsData.map((reel, index) => (
-                  <Card
-                    key={reel.id}
-                    className="group cursor-pointer hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] bg-white/80 backdrop-blur-sm border-0 shadow-sm overflow-hidden dark:bg-gray-800/80 rounded-lg"
-                    onClick={() => openModal(index)}
-                  >
-                    <div className="relative aspect-[9/16] overflow-hidden">
-                      <img
-                        src={reel.thumbnail_url}
-                        alt="Reel thumbnail"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                      
-                      {/* Play Overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <div className="bg-white/20 backdrop-blur-sm rounded-full p-2 sm:p-3">
-                          <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white fill-white" />
-                        </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-1 sm:gap-2 lg:gap-3 mb-6 sm:mb-8">
+              {reelsData.map((reel, index) => (
+                <Card
+                  key={reel.id}
+                  className="group cursor-pointer hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] bg-white/80 backdrop-blur-sm border-0 shadow-sm overflow-hidden dark:bg-gray-800/80 rounded-lg"
+                  onClick={() => openModal(index)}
+                >
+                  <div className="relative aspect-[9/16] overflow-hidden">
+                    <img
+                      src={reel.thumbnail_url}
+                      alt="Reel thumbnail"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    
+                    {/* Play Overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-full p-2 sm:p-3">
+                        <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white fill-white" />
                       </div>
+                    </div>
 
-                      {/* Quick Stats */}
-                      <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
-                        {reel.views && (
-                          <Badge variant="secondary" className="bg-black/60 text-white border-0 backdrop-blur-sm text-xs px-1 py-0.5">
-                            <Eye className="w-2 h-2 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-                            {formatNumber(reel.views)}
-                          </Badge>
-                        )}
-                      </div>
+                    {/* Quick Stats */}
+                    <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
+                      {reel.views && (
+                        <Badge variant="secondary" className="bg-black/60 text-white border-0 backdrop-blur-sm text-xs px-1 py-0.5">
+                          <Eye className="w-2 h-2 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                          {formatNumber(reel.views)}
+                        </Badge>
+                      )}
+                    </div>
 
-                      {/* Bottom Stats */}
-                      <div className="absolute bottom-0 left-0 right-0 p-1.5 sm:p-2">
-                        <div className="flex items-center justify-between text-white text-xs">
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            <span className="flex items-center gap-0.5 sm:gap-1">
-                              <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                              <span className="text-xs">{formatNumber(reel.likes)}</span>
-                            </span>
-                            <span className="flex items-center gap-0.5 sm:gap-1">
-                              <MessageCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                              <span className="text-xs">{formatNumber(reel.comments)}</span>
-                            </span>
-                          </div>
+                    {/* Bottom Stats */}
+                    <div className="absolute bottom-0 left-0 right-0 p-1.5 sm:p-2">
+                      <div className="flex items-center justify-between text-white text-xs">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <span className="flex items-center gap-0.5 sm:gap-1">
+                            <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <span className="text-xs">{formatNumber(reel.likes)}</span>
+                          </span>
+                          <span className="flex items-center gap-0.5 sm:gap-1">
+                            <MessageCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <span className="text-xs">{formatNumber(reel.comments)}</span>
+                          </span>
                         </div>
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Enhanced Pagination */}
-              <div className="flex items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8">
-                <Button
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={page === 1 || loading}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                >
-                  <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Previous</span>
-                  <span className="sm:hidden">Prev</span>
-                </Button>
-                
-                <div className="flex items-center gap-2">
-                  <span className="px-2 sm:px-3 py-1 bg-white rounded-lg shadow-sm border text-xs sm:text-sm font-medium">
-                    Page {page}
-                  </span>
-                </div>
-                
-                <Button
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={reelsData.length < limit || loading}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                >
-                  <span className="hidden sm:inline">Next</span>
-                  <span className="sm:hidden">Next</span>
-                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
-                </Button>
-              </div>
-            </>
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
 
           {/* Empty State */}
